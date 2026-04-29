@@ -1,0 +1,17 @@
+{
+  "name": "morele-cypress-tests",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "cypress run",
+    "test:open": "cypress open",
+    "test:auth": "cypress run --spec 'cypress/e2e/morele/auth.cy.js'",
+    "test:search": "cypress run --spec 'cypress/e2e/morele/search.cy.js'",
+    "test:cart": "cypress run --spec 'cypress/e2e/morele/cart.cy.js'",
+    "test:filters": "cypress run --spec 'cypress/e2e/morele/filters.cy.js'"
+  },
+  "devDependencies": {
+    "cypress": "^15.14.1",
+    "cypress-real-events": "^1.15.0"
+  }
+}
