@@ -1,0 +1,169 @@
+describe('Morele.net Sandbox E2E Tests', () => {
+
+   const email = 'ldhrnxsnqepjytqqao@vtmpj.net'
+  beforeEach(() => {
+    // 1. Visit the site
+    cy.viewport(1600, 1200)
+    cy.visit('https://www.morele.net/');
+
+    // 2. Handle the cookie consent popup
+    // Morele uses a standard consent banner. We wait for it to be visible and click
+    // 'Zgadzam się'
+    cy.wait(1500)
+        cy.contains('button', 'Akceptuję').click();
+   // cy.get('header, .js-sticky-header, .cookie-banner').invoke('css', 'display', 'none');
+  //cy.get('html').invoke('css', 'scroll-behavior', 'auto');
+  
+  });
+  
+  it('should search for a product and verify results', () => {
+    const searchTerm = 'RTX 4080';
+
+    // Type into the search bar
+    cy.get('.form-control').first()
+      .type(`${searchTerm}{enter}`);
+
+    // Verify the URL changed to the search results page
+    cy.url().should('include', 'wyszukiwarka');
+
+    // Verify that the first product title contains our search term
+    cy.get('.cat-product-name').first()
+      .should('be.visible')
+      .and('contain.text', 'RTX');
+  });
+
+  it('should add a product to the cart and verify the sidebar/modal', () => {
+    // Navigate directly to a specific product category to save time
+    cy.visit('https://www.morele.net/kategoria/monitory-523/');
+
+    // Select the first product available
+    cy.get('.cat-product').first().within(() => {
+      // Find and click the 'Add to cart' button (usually an icon or button)
+      cy.get('.btn-add-to-basket').click();
+    });
+
+    // Morele usually opens a 'Product added' modal/sidebar
+    // We check if the success message appears
+    // Wait for warranty modal to appear
+cy.get('#warranties-popup', { timeout: 10000 }).should('be.visible');
+
+// Click the correct button inside the modal
+cy.contains('#warranties-popup a', 'Nie potrzebuję dodatkowej ochrony')
+  .filter(':visible')
+  .click();
+  
+
+    // Go to cart
+    
+    // Verify we are on the basket page
+    cy.url().should('include', '/koszyk/');
+    cy.get('.product-main-container').should('have.length.at.least', 1);
+  });
+
+  it('should navigate to Laptops without being blocked', () => {
+  // Use a specific selector for the sidebar to avoid ambiguity
+  cy.get('.cn-name-value')
+    .contains('Laptopy')
+    .trigger('mouseover', { force: true });
+
+  // Click the subcategory link
+  // We use { force: true } as a safety net against any other invisible overlays
+  cy.contains('a', 'Laptopy')
+    .should('be.visible')
+    .click({ force: true });
+
+  // Verify the transition
+  cy.url().should('include', '/laptopy');
+  
+  // Use a guard to wait for the page to actually render the title
+  cy.get('h1', { timeout: 10000 })
+    .should('be.visible')
+    .and('not.be.empty')
+    .and('contain.text', 'Laptopy');
+});
+it('allow the user to login', () => {
+ 
+  
+//cy.intercept('POST', '**/login', {
+//  statusCode: 200,
+//  body: { success: true }
+
+//}).as('login');
+
+  cy.contains('Zaloguj się').click();
+  cy.url().should('include', '/login');
+  cy.get('input[name="_username"]').type('your-email@example.com');
+  cy.get('button[type="submit"]').filter(':visible').click();
+  cy.get('.mv-invalid')
+  cy.wait(500)
+  cy.get('input[name="_password"]').type('your-password');
+  cy.get('input[name="_remember_me"]').check();
+  cy.get('button[type="submit"]').filter(':visible').click();
+  cy.contains('Dane logowania nie są poprawne. Zalogowanie nie powiodło się.')
+  cy.get('input[name="_username"]').clear().type(email);
+  cy.get('input[name="_password"]').type('String1!');
+  cy.wait(500)
+  cy.get('button[type="submit"]').filter(':visible').click({force: true});
+  cy.url().should('equal', 'https://www.morele.net/');
+  cy.get('.h-user-control').should('contain.text', 'Witaj');
+
+  
+
+
+
+
+ // cy.wait('@login');
+
+});
+it('allows the user to reset his password', () => {
+  cy.contains('Zaloguj się').click();
+  cy.url().should('include', '/login');
+  cy.get('a[href="/zapomniane-haslo"]').should('be.visible')
+  cy.wait(500)
+  cy.contains('Nie pamiętam hasła').click();
+  cy.url().should('include', '/zapomniane-haslo');
+  cy.get('input[id="reset_password_email"]').type(email);
+  cy.get('button[type="submit"]').filter(':visible').click({ force: true });
+  cy.contains('Przypominanie hasła')
+  cy.contains(email)
+  cy.wait(500)
+cy.get('a[href="/"]').contains('Przejdź do strony głównej').click({ force: true });  cy.url().should('equal', 'https://www.morele.net/');
+
+
+});
+it('should filter products by price range', () => {
+  cy.intercept('GET', '**/kategoria/**').as('filterUpdate');
+  cy.visit('https://www.morele.net/kategoria/monitory-523/');
+
+  cy.get('.input-range-from').filter(':visible').clear().type('500',{force: true});
+  cy.wait(1500)
+  cy.wait('@filterUpdate');
+  cy.get('.input-range-to').filter(':visible').clear().type('1500',{force: true});
+  cy.wait(1500)
+  cy.wait('@filterUpdate');
+  //cy.contains('Zastosuj').click();
+
+  cy.get('.price-new').each(($el) => {
+    const price = parseFloat($el.text().replace(/[^\d.,]/g, '').replace(',', '.'));
+    expect(price).to.be.within(500, 1500);
+  });
+});
+ 
+/*
+  it('should verify the newsletter validation', () => {
+    // Scroll to footer
+    cy.get('footer').scrollIntoView();
+
+    // Type an invalid email
+    cy.get('input[type="email"]').first().type('invalid-email');
+    
+    // Click subscribe
+    cy.get('footer button').contains('Zapisz się').click();
+
+    // Check for error message (Site specific selector)
+    // Morele uses standard HTML validation or custom tooltips
+    cy.get('input:invalid').should('have.length.at.least', 1);
+  });
+  */
+  
+});
